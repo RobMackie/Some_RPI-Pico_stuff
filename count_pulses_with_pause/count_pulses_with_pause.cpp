@@ -137,8 +137,8 @@ int main()
             current_count = pulse_counter.get_current();
             total_count = pulse_counter.get_cumulative();
             report_count = pulse_counter.get_report_count();
-            printf("current count of pulses = %zu,\n total count of pulses = %zu\nreport# = %zu\n", 
-                    current_count, total_count, report_count);
+            printf("current report# = %zu\ncurrent count of pulses = %zu,\n   total count of pulses = %zu\n\n", 
+                    report_count, current_count, total_count);
         } else {
             printf("Waiting for data\n");
             sleep_ms(1000);
