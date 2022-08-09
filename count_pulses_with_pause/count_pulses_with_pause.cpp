@@ -2,12 +2,11 @@
 
 #include "pico/stdlib.h"
 
-/* robert
+
 #include "hardware/irq.h"
 #include "hardware/pio.h"
 
 #include "count_pulses_with_pause.pio.h"
-robert */
 
 /*
 This class can be used for protocols where the data is encoded by a number of pulses in a pulse train followed by a pause.
@@ -15,14 +14,14 @@ E.g. the LMT01 temperature sensor uses this (see https://www.reddit.com/r/raspbe
 
 The class itself only starts the state machine and, when called, read_pulses() gives the data the state machine has put in the Rx FIFO
 */
-#ifdef ROBERT
+
 class CountPulsesWithPause
 {
 public:
     // input = pin that receives the pulses.
     CountPulsesWithPause(uint input)
     {
-/* robert
+
 	// initialize local counts
         _current_pulse_count = 0;
         _cumulative_pulse_count = 0;
@@ -57,9 +56,9 @@ public:
 
         // enable the sm
         pio_sm_set_enabled(pio, sm, true);
-robert */
+
     }
-/* robert
+
     // read the number of pulses in a pulse train
     void read_pulses(void)
     {
@@ -87,9 +86,9 @@ robert */
     void clear_queues() {
         pio_sm_clear_fifos(pio, sm);
     }
-robert */
 
-/* robert 
+
+
 private:
     // the pio instance
     PIO pio;
@@ -97,36 +96,30 @@ private:
     uint sm;
     __uint32_t _current_pulse_count;
     __uint32_t _cumulative_pulse_count;
-robert */
+
 };
-#endif // ROBERT
+
 
 // pin to monitor for pulses
-//#define STEP_PIN 28
+#define STEP_PIN 28
 
 int main()
 {
     // needed for printf
     stdio_init_all();
-    while (true) {
-        printf("Place Holder\n\n");
-        sleep_ms(1000);
-    } 
-    return 0;
-/* robert 
+ 
+    printf("Place Holder\n\n");
+    sleep_ms(1000);
+
     // the instance of the CountPulsesWithPause.
     //  Note the input pin is 28 in this example
     CountPulsesWithPause pulse_counter(STEP_PIN);
 
     // clear the FIFO: before starting measurement
     pulse_counter.clear_queues();
-    while (true) {
-        printf("Place Holder\n\n");
-        sleep_ms(1000);
 
-    } 
-robert */
-    /* robert 
+
+
     // infinite loop to print pulse measurements
     while (true)
     {
@@ -137,5 +130,5 @@ robert */
 
         printf("current count of pulses = %zu, \n total count of pulses = %zu\n\n", current_count, total_count);
     }
-  robert   */
+ 
 }
