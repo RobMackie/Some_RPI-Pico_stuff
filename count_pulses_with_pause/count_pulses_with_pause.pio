@@ -44,9 +44,11 @@ test:
 during_pulse:
         ;  a pulse is in progress, wait till the pulse is over
     wait 0 PIN 0 
-        ;  increase the number of pulses observed
-    jmp y-- during_pulse2
-        ; assume y never reaches 0
+
+        ;  increase the number of pulses observed (we jump because 
+        ; assume y never reaches 0, becuase we break if it does. 
+        ;    4 billion seems safe enough
+    jmp y-- during_pulse2  ; just jumping to decrement y
 during_pulse2:
         ;  restart the time counter
     jmp start_time_counter
