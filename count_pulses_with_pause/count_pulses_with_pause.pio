@@ -32,16 +32,19 @@ start_time_counter:
 test_for_pulse:
         ; test if there is a pulse (a 1 on the pin)
     jmp PIN pulse_found
-        ;  no pulse is currently observed: decrement time_counter and test again
+        ;  else: no pulse is currently observed: decrement time_counter and test again
     jmp x-- test_for_pulse
-        ; time_counter has reached 0: a pause has happened
+        ; time_counter has reached 0: time to report
         ; place the pulse counter in the Rx FIFO
     mov ISR ~y
     push
-        ; start over
+        ; start over, including resetting timer
     jmp start
 
 pulse_found:
+        ; Order here matters - if we count first, we have to decrement and 
+        ;    jump too early. Normally we'd count on the rising edge, but
+        ;    then we wold ave trouble waiting for the descent.
         ;  a pulse is in progress, wait till the pulse is over
     wait 0 PIN 0 
 
@@ -51,5 +54,7 @@ pulse_found:
     jmp y-- pulse_found_part2  ; just jumping to decrement y
 pulse_found_part2:
         ;  restart the time counter
-    jmp start_time_counter
+    ;jmp start_time_counter
+    ; restart collecting pulses
+    jmp test_for_pulse
 

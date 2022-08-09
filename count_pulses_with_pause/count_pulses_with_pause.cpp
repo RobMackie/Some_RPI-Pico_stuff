@@ -25,6 +25,7 @@ public:
 	// initialize local counts
         _current_pulse_count = 0;
         _cumulative_pulse_count = 0;
+        _report_count = 0;
 
         // pio 0 is used
         pio = pio0;
@@ -60,19 +61,20 @@ public:
     }
 
     // read the number of pulses in a pulse train
-    void read_pulses(void)
+    bool read_pulses(void)
     {
+        _current_pulse_count = 0;
          // wait for the FIFO to contain a data item
-        while (pio_sm_get_rx_fifo_level(pio, sm) < 1) {
-            sleep_ms(10);
-            printf("waiting around\n");
+        if  (pio_sm_get_rx_fifo_level(pio, sm) < 1) {
+            return false;
         }
         // whle the fifo has entries, consume them, keeping track of count of pulses
         do {
-            printf("Reading\n");
-            _current_pulse_count = pio_sm_get(pio, sm);
-            _cumulative_pulse_count += _current_pulse_count;
+            _current_pulse_count += pio_sm_get(pio, sm);
+            _report_count++;
         } while (pio_sm_get_rx_fifo_level(pio, sm) > 0);
+        _cumulative_pulse_count += _current_pulse_count;
+        return true;
     }
 
     uint32_t get_current() {
@@ -81,6 +83,10 @@ public:
 
     uint32_t get_cumulative() {
         return _cumulative_pulse_count;
+    }
+
+    uint32_t get_report_count() {
+        return _report_count;
     }
 
     void clear_queues() {
@@ -94,8 +100,10 @@ private:
     PIO pio;
     // the state machine
     uint sm;
-    __uint32_t _current_pulse_count;
-    __uint32_t _cumulative_pulse_count;
+    uint32_t _current_pulse_count;
+    uint32_t _cumulative_pulse_count;
+    uint32_t _report_count;
+    
 
 };
 
@@ -118,17 +126,24 @@ int main()
     // clear the FIFO: before starting measurement
     pulse_counter.clear_queues();
 
-
+    uint32_t current_count = 0;
+    uint32_t total_count = 0;
+    uint32_t report_count = 0;
 
     // infinite loop to print pulse measurements
     while (true)
     {
-        printf("Good Opening\n");
-        pulse_counter.read_pulses();
-        uint current_count = pulse_counter.get_current();
-        uint total_count = pulse_counter.get_cumulative();
+        if (pulse_counter.read_pulses()) {
+            current_count = pulse_counter.get_current();
+            total_count = pulse_counter.get_cumulative();
+            report_count = pulse_counter.get_report_count();
+            printf("current count of pulses = %zu,\n total count of pulses = %zu\nreport# = %zu\n", 
+                    current_count, total_count, report_count);
+        } else {
+            printf("Waiting for data\n");
+            sleep_ms(1000);
+        }
 
-        printf("current count of pulses = %zu, \n total count of pulses = %zu\n\n", current_count, total_count);
     }
  
 }
