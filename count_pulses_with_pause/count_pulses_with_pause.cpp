@@ -19,7 +19,7 @@ class CountPulsesWithPause
 {
 public:
     // input = pin that receives the pulses.
-    CountPulsesWithPause(uint input)
+    CountPulsesWithPause(uint input, uint sm_select)
     {
 
 	// initialize local counts
@@ -31,13 +31,17 @@ public:
         pio = pio0;
 
         // state machine 0
-        sm = 0;
+        sm = sm_select;
 
         // configure the used pin
         pio_gpio_init(pio, input);
 
-        // load the pio program into the pio memory
-        uint offset = pio_add_program(pio, &count_pulses_with_pause_program);
+        if (!is_program_loaded) 
+        {
+            // load the pio program into the pio memory if it isn't already loaded
+            offset = pio_add_program(pio, &count_pulses_with_pause_program);
+            is_program_loaded = true;
+        }
 
         // make a sm config
         pio_sm_config c = count_pulses_with_pause_program_get_default_config(offset);
@@ -61,7 +65,7 @@ public:
     }
 
     // read the number of pulses in a pulse train
-    bool read_pulses(void)
+    auto read_pulses(void) -> bool
     {
         _current_pulse_count = 0;
          // wait for the FIFO to contain a data item
@@ -77,23 +81,21 @@ public:
         return true;
     }
 
-    uint32_t get_current() {
+    auto get_current() -> uint32_t {
         return _current_pulse_count;
     }
 
-    uint32_t get_cumulative() {
+    auto get_cumulative() -> uint32_t {
         return _cumulative_pulse_count;
     }
 
-    uint32_t get_report_count() {
+    auto get_report_count() -> uint32_t {
         return _report_count;
     }
 
     void clear_queues() {
         pio_sm_clear_fifos(pio, sm);
     }
-
-
 
 private:
     // the pio instance
@@ -103,13 +105,18 @@ private:
     uint32_t _current_pulse_count;
     uint32_t _cumulative_pulse_count;
     uint32_t _report_count;
-    
 
+// class level members
+    static bool is_program_loaded;
+    static uint offset;
 };
 
+bool CountPulsesWithPause::is_program_loaded = false;
+uint CountPulsesWithPause::offset = 0;
 
 // pin to monitor for pulses
-#define STEP_PIN 28
+#define STEP_PIN_UP 6
+#define STEP_PIN_DN 7
 
 int main()
 {
@@ -121,28 +128,41 @@ int main()
 
     // the instance of the CountPulsesWithPause.
     //  Note the input pin is 28 in this example
-    CountPulsesWithPause pulse_counter(STEP_PIN);
+    CountPulsesWithPause pulse_counter_up(STEP_PIN_UP, 0);
+    CountPulsesWithPause pulse_counter_down(STEP_PIN_DN, 1);
 
     // clear the FIFO: before starting measurement
-    pulse_counter.clear_queues();
+    pulse_counter_up.clear_queues();
+    pulse_counter_down.clear_queues();
 
-    uint32_t current_count = 0;
-    uint32_t total_count = 0;
-    uint32_t report_count = 0;
+    uint32_t current_count_up = 0;
+    uint32_t total_count_up = 0;
+    uint32_t report_count_up = 0;
+
+    uint32_t current_count_down = 0;
+    uint32_t total_count_down = 0;
+    uint32_t report_count_down = 0;
 
     // infinite loop to print pulse measurements
     while (true)
     {
-        if (pulse_counter.read_pulses()) {
-            current_count = pulse_counter.get_current();
-            total_count = pulse_counter.get_cumulative();
-            report_count = pulse_counter.get_report_count();
-            printf("current report# = %zu\ncurrent count of pulses = %zu,\n   total count of pulses = %zu\n\n", 
-                    report_count, current_count, total_count);
-        } else {
-            printf("Waiting for data\n");
-            sleep_ms(1000);
-        }
+        if (pulse_counter_up.read_pulses()) {
+            current_count_up = pulse_counter_up.get_current();
+            total_count_up = pulse_counter_up.get_cumulative();
+            report_count_up = pulse_counter_up.get_report_count();
+            printf("X: UP: current report# = %zu\ncurrent count of pulses = %zu,\n   total count of pulses = %zu\n\n", 
+                    report_count_up, current_count_up, total_count_up);
+        } 
+        if (pulse_counter_down.read_pulses()) {
+            current_count_down = pulse_counter_down.get_current();
+            total_count_down = pulse_counter_down.get_cumulative();
+            report_count_down = pulse_counter_down.get_report_count();
+            printf("X: DN: current report# = %zu\ncurrent count of pulses = %zu,\n   total count of pulses = %zu\n\n", 
+                    report_count_down, current_count_down, total_count_down);
+        }         
+        
+        printf("Sleeping before polling for data again\n");
+        sleep_ms(1000);
 
     }
  
